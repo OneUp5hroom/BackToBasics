@@ -1,0 +1,73 @@
+@page "/binary-tree"
+@using Microsoft.AspNetCore.Html
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+
+
+<title>BinaryTree</title>
+
+<h1>Binary Tree Page</h1>
+
+<button type="button" class="btn btn-primary" @onclick="AddNode">+ Add Node</button>
+
+@foreach (Node node in _binaryTree.TreeNodes)
+{
+    <div class="node" style="top: @(new HtmlString(node.Position.Top.ToString()))px; left: @(new HtmlString(node.Position.Left.ToString()))px;">
+        <span @ref=@node.Element>
+            @node.Value
+        </span>
+    </div>
+}
+
+@foreach (Node node in _binaryTree.TreeNodes)
+{
+    if (node.ParentNode != null)
+    {
+        <svg class="line">
+            <line 
+                x1=@node.Position.H_Center
+                y1=@node.Position.V_Center
+                x2=@node.ParentNode.Position.H_Center
+                y2=@node.ParentNode.Position.V_Center
+                stroke="red"
+                stroke-width="3"
+            />
+        </svg>
+    }
+}
+
+
+@code
+{
+    private int _nodeCount = 1;
+
+    private Tree _binaryTree = new Tree();
+
+    protected override async void OnAfterRender(bool firstRender)
+    {
+        _binaryTree.CanvasSize = await JSRuntime.InvokeAsync<ScreenSize>("getScreenSize");
+        foreach (var node in _binaryTree.TreeNodes)
+        {
+            node.Position = await JSRuntime.InvokeAsync<ElementPostion>("getBoundingClientRect", node.Element);
+            if (node.ParentNode != null)
+            {
+                if (node.LineRendered == false)
+                {
+                    node.LineRendered = true;
+                    Refresh();
+                }
+            }
+        }    
+        
+    }
+
+    private void AddNode()
+    {
+        _binaryTree.Add(_nodeCount);
+        _nodeCount++;
+    }
+    private void Refresh()
+    {
+        this.StateHasChanged();
+    }
+}
